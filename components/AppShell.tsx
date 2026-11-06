@@ -1,0 +1,67 @@
+"use client";
+
+import { useState } from "react";
+import { Menu } from "lucide-react";
+import Sidebar, { type SectionId, SECTIONS, type AccountUser } from "@/components/Sidebar";
+import Dashboard from "@/components/Dashboard";
+import RegressionCalculator from "@/components/RegressionCalculator";
+import HypothesisTesting from "@/components/HypothesisTesting";
+import About from "@/components/About";
+
+export default function AppShell({ user }: { user: AccountUser }) {
+  const [section, setSection] = useState<SectionId>("dashboard");
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const current = SECTIONS.find((s) => s.id === section);
+
+  function navigate(id: SectionId) {
+    setSection(id);
+    setMenuOpen(false);
+    window.scrollTo({ top: 0 });
+  }
+
+  return (
+    <div className="min-h-screen lg:flex">
+      <Sidebar
+        active={section}
+        onNavigate={navigate}
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        user={user}
+      />
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Top bar (mobile only) */}
+        <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur lg:hidden">
+          <button
+            type="button"
+            onClick={() => setMenuOpen(true)}
+            aria-label="Open navigation menu"
+            className="rounded-md p-2 text-slate-700 hover:bg-slate-100"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <span className="truncate text-sm font-semibold text-slate-900">
+            {current?.label}
+          </span>
+        </header>
+
+        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
+          {/* The tools stay mounted so typed data is kept while switching sections. */}
+          <div hidden={section !== "dashboard"}>
+            <Dashboard onNavigate={navigate} />
+          </div>
+          <div hidden={section !== "regression"}>
+            <RegressionCalculator />
+          </div>
+          <div hidden={section !== "hypothesis"}>
+            <HypothesisTesting />
+          </div>
+          <div hidden={section !== "about"}>
+            <About />
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
