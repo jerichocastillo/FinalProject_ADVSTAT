@@ -100,7 +100,7 @@ export default function NormalDistributionChart({
       <div
         role="img"
         aria-label={`${curveName} with the rejection region shaded and the test statistic marked`}
-        className="h-[300px] w-full min-w-0 sm:h-[360px]"
+        className="h-75 w-full min-w-0 sm:h-90"
       >
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={data} margin={{ top: 24, right: 20, bottom: 30, left: 4 }}>

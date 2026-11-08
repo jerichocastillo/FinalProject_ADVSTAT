@@ -69,7 +69,7 @@ export function Stat({ label, value, sub }: { label: string; value: string; sub?
   return (
     <div className="flex min-h-28 min-w-0 flex-col rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4 shadow-sm">
       <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-indigo-700">{label}</p>
-      <p className="mt-3 break-words text-xl font-bold tracking-tight tabular-nums text-slate-900 sm:text-2xl">{value}</p>
+      <p className="mt-3 wrap-break-word text-xl font-bold tracking-tight tabular-nums text-slate-900 sm:text-2xl">{value}</p>
       {sub && <p className="mt-1 text-xs leading-5 text-slate-500">{sub}</p>}
     </div>
   );

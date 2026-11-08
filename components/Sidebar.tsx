@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
   Info,
@@ -41,6 +42,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ active, onNavigate, open, onClose, user }: SidebarProps) {
+  const router = useRouter();
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [logoutError, setLogoutError] = useState<string | null>(null);
@@ -62,7 +64,8 @@ export default function Sidebar({ active, onNavigate, open, onClose, user }: Sid
     setLogoutError(null);
 
     try {
-      await signOut({ callbackUrl: "/login" });
+      await signOut({ redirect: false, callbackUrl: "/login" });
+      router.replace("/login");
     } catch (error) {
       console.error("Sign out failed:", error);
       setLogoutError("We couldn't log you out. Please try again.");

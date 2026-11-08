@@ -382,7 +382,7 @@ export default function HypothesisTesting() {
               {isT ? "t-test" : "Z-test"} · {isOneSample ? "one-sample data" : "two-sample data"}
             </h4>
             <div className="mb-5 rounded-xl border border-indigo-100 bg-indigo-50/70 p-3.5 sm:p-4">
-              <p className="break-words text-sm leading-6 text-slate-700">{FORMULA_HINTS[kind]}</p>
+              <p className="wrap-break-word text-sm leading-6 text-slate-700">{FORMULA_HINTS[kind]}</p>
             </div>
 
             {kind === "z-one" && (
@@ -483,19 +483,19 @@ export default function HypothesisTesting() {
               className="border-slate-200/90 shadow-[0_12px_28px_rgba(15,23,42,0.045)]"
             >
               <div className="mb-5 grid gap-3 sm:grid-cols-2 sm:gap-4">
-                <div className="min-w-0 break-words rounded-xl border border-indigo-100 bg-indigo-50/60 p-4 text-sm leading-6 text-slate-700">
+                <div className="min-w-0 wrap-break-word rounded-xl border border-indigo-100 bg-indigo-50/60 p-4 text-sm leading-6 text-slate-700">
                   <span className="font-semibold text-indigo-700">H₀: </span>
                   {result.h0}
                 </div>
-                <div className="min-w-0 break-words rounded-xl border border-slate-200 bg-slate-50/80 p-4 text-sm leading-6 text-slate-700">
+                <div className="min-w-0 wrap-break-word rounded-xl border border-slate-200 bg-slate-50/80 p-4 text-sm leading-6 text-slate-700">
                   <span className="font-semibold text-slate-900">H₁: </span>
                   {result.h1}
                 </div>
               </div>
 
               <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 text-sm leading-6 text-slate-700 sm:p-5">
-                <p className="break-words font-medium text-slate-900">{result.formula}</p>
-                <p className="mt-2 break-words">{result.substitution}</p>
+                <p className="wrap-break-word font-medium text-slate-900">{result.formula}</p>
+                <p className="mt-2 wrap-break-word">{result.substitution}</p>
               </div>
 
               <div className="mt-5 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">

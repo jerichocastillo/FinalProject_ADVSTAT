@@ -46,7 +46,7 @@ export default function RegressionChart({
       <p className="mb-3 text-center text-sm font-semibold leading-5 text-slate-800">
         Scatter plot of Y versus X with the fitted regression line
       </p>
-      <div role="img" aria-label="Scatter plot of the entered data with the regression line" className="h-[320px] w-full min-w-0 sm:h-[360px]">
+      <div role="img" aria-label="Scatter plot of the entered data with the regression line" className="h-80 w-full min-w-0 sm:h-90">
         <ResponsiveContainer width="100%" height="100%">
           <ScatterChart margin={{ top: 10, right: 20, bottom: 36, left: 4 }}>
             <CartesianGrid stroke="#e2e8f0" strokeDasharray="4 4" />

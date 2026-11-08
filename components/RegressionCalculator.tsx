@@ -233,7 +233,7 @@ export default function RegressionCalculator() {
                 <p className="text-xs font-medium text-indigo-700">
                   Regression equation
                 </p>
-                <p className="mt-2 break-words text-xl font-semibold tracking-tight text-indigo-800 tabular-nums sm:text-2xl">
+                <p className="mt-2 wrap-break-word text-xl font-semibold tracking-tight text-indigo-800 tabular-nums sm:text-2xl">
                   {formatEquation(result.intercept, result.slope)}
                 </p>
                 <p className="mt-3 text-sm leading-6 text-indigo-800">
@@ -264,24 +264,24 @@ export default function RegressionCalculator() {
                   <ChevronDown className="h-4 w-4 shrink-0 text-indigo-600 transition-transform group-open:rotate-180" aria-hidden="true" />
                 </summary>
                 <div className="mt-3 space-y-2.5 text-slate-700">
-                  <p className="break-words rounded-xl border border-slate-200/80 bg-white px-3 py-3 text-left leading-6 tabular-nums sm:px-4">Σ(x − x̄)(y − ȳ) = {fmt(result.sxy)}</p>
-                  <p className="break-words rounded-xl border border-slate-200/80 bg-white px-3 py-3 text-left leading-6 tabular-nums sm:px-4">Σ(x − x̄)² = {fmt(result.sxx)}</p>
-                  <p className="break-words rounded-xl border border-slate-200/80 bg-white px-3 py-3 text-left leading-6 tabular-nums sm:px-4">Σ(y − ȳ)² = {fmt(result.syy)}</p>
-                  <p className="break-words rounded-xl border border-slate-200/80 bg-white px-3 py-3 text-left leading-6 tabular-nums sm:px-4">
+                  <p className="wrap-break-word rounded-xl border border-slate-200/80 bg-white px-3 py-3 text-left leading-6 tabular-nums sm:px-4">Σ(x − x̄)(y − ȳ) = {fmt(result.sxy)}</p>
+                  <p className="wrap-break-word rounded-xl border border-slate-200/80 bg-white px-3 py-3 text-left leading-6 tabular-nums sm:px-4">Σ(x − x̄)² = {fmt(result.sxx)}</p>
+                  <p className="wrap-break-word rounded-xl border border-slate-200/80 bg-white px-3 py-3 text-left leading-6 tabular-nums sm:px-4">Σ(y − ȳ)² = {fmt(result.syy)}</p>
+                  <p className="wrap-break-word rounded-xl border border-slate-200/80 bg-white px-3 py-3 text-left leading-6 tabular-nums sm:px-4">
                     B = Σ(x − x̄)(y − ȳ) / Σ(x − x̄)² = {fmt(result.sxy)} / {fmt(result.sxx)} ={" "}
                     <strong className="font-semibold text-indigo-700">{fmt(result.slope)}</strong>
                   </p>
-                  <p className="break-words rounded-xl border border-slate-200/80 bg-white px-3 py-3 text-left leading-6 tabular-nums sm:px-4">
+                  <p className="wrap-break-word rounded-xl border border-slate-200/80 bg-white px-3 py-3 text-left leading-6 tabular-nums sm:px-4">
                     A = ȳ − B·x̄ = {fmt(result.meanY)} − {fmtParen(result.slope)}({fmt(result.meanX)}) ={" "}
                     <strong className="font-semibold text-indigo-700">{fmt(result.intercept)}</strong>
                   </p>
                   {result.r !== null ? (
-                    <p className="break-words rounded-xl border border-slate-200/80 bg-white px-3 py-3 text-left leading-6 tabular-nums sm:px-4">
+                    <p className="wrap-break-word rounded-xl border border-slate-200/80 bg-white px-3 py-3 text-left leading-6 tabular-nums sm:px-4">
                       r = Σ(x − x̄)(y − ȳ) / √[Σ(x − x̄)² · Σ(y − ȳ)²] = {fmt(result.sxy)} / √[
                       {fmt(result.sxx)} × {fmt(result.syy)}] = <strong className="font-semibold text-indigo-700">{fmt(result.r)}</strong>
                     </p>
                   ) : (
-                    <p className="break-words rounded-xl border border-slate-200/80 bg-white px-3 py-3 text-left leading-6 tabular-nums sm:px-4">r: not defined (see the warning above).</p>
+                    <p className="wrap-break-word rounded-xl border border-slate-200/80 bg-white px-3 py-3 text-left leading-6 tabular-nums sm:px-4">r: not defined (see the warning above).</p>
                   )}
                 </div>
               </details>
