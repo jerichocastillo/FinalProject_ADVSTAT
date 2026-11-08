@@ -33,6 +33,7 @@ interface DistributionChartProps {
 interface CurvePoint {
   x: number;
   density: number;
+  acceptance: number | null;
   rejection: number | null;
 }
 
@@ -61,9 +62,10 @@ export default function NormalDistributionChart({
 
     const density = (x: number) => (useT ? tPdf(x, df as number) : normalPdf(x));
 
-    // The shaded region begins exactly at the critical value(s).
+    // The regions begin exactly at the critical value(s).
     const leftCut = tail === "right" ? null : criticalValues[0];
     const rightCut = tail === "left" ? null : criticalValues[criticalValues.length - 1];
+    const EPS = 1e-9;
 
     const xs = new Set<number>();
     const step = Math.max(0.05, (hi - lo) / 300);
@@ -74,9 +76,17 @@ export default function NormalDistributionChart({
       .sort((a, b) => a - b)
       .map((x) => {
         const d = density(x);
-        const inLeft = leftCut !== null && x <= leftCut + 1e-9;
-        const inRight = rightCut !== null && x >= rightCut - 1e-9;
-        return { x, density: d, rejection: inLeft || inRight ? d : null };
+        const inLeftRejection = leftCut !== null && x <= leftCut + EPS;
+        const inRightRejection = rightCut !== null && x >= rightCut - EPS;
+        // The critical value belongs to both regions so the two shaded areas touch with no gap.
+        const inAcceptance =
+          (leftCut === null || x >= leftCut - EPS) && (rightCut === null || x <= rightCut + EPS);
+        return {
+          x,
+          density: d,
+          acceptance: inAcceptance ? d : null,
+          rejection: inLeftRejection || inRightRejection ? d : null,
+        };
       });
 
     const tickStep = Math.max(1, Math.ceil((hi - lo) / 12));
@@ -99,7 +109,7 @@ export default function NormalDistributionChart({
       </p>
       <div
         role="img"
-        aria-label={`${curveName} with the rejection region shaded and the test statistic marked`}
+        aria-label={`${curveName} with the acceptance and rejection regions shaded and the test statistic marked`}
         className="h-75 w-full min-w-0 sm:h-90"
       >
         <ResponsiveContainer width="100%" height="100%">
@@ -143,26 +153,41 @@ export default function NormalDistributionChart({
                 fontSize: 12,
               }}
             />
+            {/* Acceptance region (light indigo) */}
+            <Area
+              type="monotone"
+              dataKey="acceptance"
+              name="Acceptance region"
+              stroke="none"
+              fill="#c7d2fe"
+              fillOpacity={0.55}
+              dot={false}
+              connectNulls={false}
+              isAnimationActive={false}
+              tooltipType="none"
+            />
+            {/* Rejection region (red) */}
+            <Area
+              type="monotone"
+              dataKey="rejection"
+              name="Rejection region"
+              stroke="none"
+              fill="#ef4444"
+              fillOpacity={0.35}
+              dot={false}
+              connectNulls={false}
+              isAnimationActive={false}
+              tooltipType="none"
+            />
+            {/* The curve itself, drawn on top of the shaded areas */}
             <Area
               type="monotone"
               dataKey="density"
               name={curveName}
               stroke="#4f46e5"
               strokeWidth={2.5}
-              fill="#eef2ff"
-              fillOpacity={0.85}
+              fill="none"
               dot={false}
-              isAnimationActive={false}
-            />
-            <Area
-              type="monotone"
-              dataKey="rejection"
-              name="Rejection region"
-              stroke="none"
-              fill="#4f46e5"
-              fillOpacity={0.35}
-              dot={false}
-              connectNulls={false}
               isAnimationActive={false}
             />
             {criticalValues.map((c) => (
@@ -201,7 +226,10 @@ export default function NormalDistributionChart({
           <span className="inline-block h-0.5 w-5 bg-indigo-600" /> {curveName}
         </li>
         <li className="flex items-center gap-1.5">
-          <span className="inline-block h-3 w-3 rounded-sm bg-indigo-500/35" /> Rejection region
+          <span className="inline-block h-3 w-3 rounded-sm bg-indigo-200/80" /> Acceptance region
+        </li>
+        <li className="flex items-center gap-1.5">
+          <span className="inline-block h-3 w-3 rounded-sm bg-red-500/35" /> Rejection region
         </li>
         <li className="flex items-center gap-1.5">
           <span className="inline-block h-0 w-5 border-t-2 border-dashed border-red-500" /> Critical value ({criticalLabel})

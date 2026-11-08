@@ -34,9 +34,6 @@ const EMPTY_Z_TWO = { n1: "", mean1: "", sigma1: "", n2: "", mean2: "", sigma2: 
 const EMPTY_T_ONE = { n: "", sampleMean: "", mu0: "", s: "" };
 const EMPTY_T_TWO = { n1: "", mean1: "", s1: "", n2: "", mean2: "", s2: "" };
 
-/** H₀ and H₁ are written automatically from the tail type and μ₀. */
-const AUTO_HYPOTHESES = { h0: "", h1: "" };
-
 /* ---------- Examples taken from the lesson slides ---------- */
 
 interface Example {
@@ -198,6 +195,8 @@ export default function HypothesisTesting() {
   const [kind, setKind] = useState<TestKind>("z-one");
   const [alpha, setAlpha] = useState<Alpha>(0.05);
   const [tail, setTail] = useState<Tail>("two");
+  const [h0, setH0] = useState("");
+  const [h1, setH1] = useState("");
   const [zOne, setZOne] = useState(EMPTY_Z_ONE);
   const [zTwo, setZTwo] = useState(EMPTY_Z_TWO);
   const [tOne, setTOne] = useState(EMPTY_T_ONE);
@@ -223,6 +222,8 @@ export default function HypothesisTesting() {
     setKind(example.kind);
     setTail(example.tail);
     setAlpha(example.alpha);
+    setH0("");
+    setH1("");
     if (example.kind === "z-one") setZOne({ ...EMPTY_Z_ONE, ...example.values });
     if (example.kind === "z-two") setZTwo({ ...EMPTY_Z_TWO, ...example.values });
     if (example.kind === "t-one") setTOne({ ...EMPTY_T_ONE, ...example.values });
@@ -234,6 +235,8 @@ export default function HypothesisTesting() {
 
   function clearAll() {
     setSelectedExample("");
+    setH0("");
+    setH1("");
     setZOne(EMPTY_Z_ONE);
     setZTwo(EMPTY_Z_TWO);
     setTOne(EMPTY_T_ONE);
@@ -246,20 +249,24 @@ export default function HypothesisTesting() {
   const outcome: Validation<TestOutcome> = useMemo(() => {
     switch (kind) {
       case "z-one":
-        return runOneSampleZTest({ ...AUTO_HYPOTHESES, alpha, tail, ...zOne });
+        return runOneSampleZTest({ h0, h1, alpha, tail, ...zOne });
       case "z-two":
-        return runTwoSampleZTest({ ...AUTO_HYPOTHESES, alpha, tail, ...zTwo });
+        return runTwoSampleZTest({ h0, h1, alpha, tail, ...zTwo });
       case "t-one":
-        return runOneSampleTTest({ ...AUTO_HYPOTHESES, alpha, tail, ...tOne });
+        return runOneSampleTTest({ h0, h1, alpha, tail, ...tOne });
       case "t-two":
-        return runTwoSampleTTest({ ...AUTO_HYPOTHESES, alpha, tail, equalVariances, ...tTwo });
+        return runTwoSampleTTest({ h0, h1, alpha, tail, equalVariances, ...tTwo });
     }
-  }, [kind, alpha, tail, zOne, zTwo, tOne, tTwo, equalVariances]);
+  }, [kind, h0, h1, alpha, tail, zOne, zTwo, tOne, tTwo, equalVariances]);
 
   const result = outcome.ok ? outcome.value : null;
   const isOneSample = sampleCount === "one";
   const isT = family === "t";
   const statName = isT ? "t" : "z";
+
+  const symbol = tail === "left" ? "<" : tail === "right" ? ">" : "≠";
+  const h0Placeholder = isOneSample ? "Leave blank for μ = μ₀" : "Leave blank for μ₁ = μ₂";
+  const h1Placeholder = isOneSample ? `Leave blank for μ ${symbol} μ₀` : `Leave blank for μ₁ ${symbol} μ₂`;
 
   return (
     <div className="mx-auto w-full max-w-5xl min-w-0">
@@ -375,6 +382,26 @@ export default function HypothesisTesting() {
                 </Field>
               </div>
             )}
+            <Field label="Null hypothesis (H₀)" htmlFor="h0">
+              <input
+                id="h0"
+                type="text"
+                className={inputClass}
+                value={h0}
+                onChange={(e) => setH0(e.target.value)}
+                placeholder={h0Placeholder}
+              />
+            </Field>
+            <Field label="Alternative hypothesis (H₁)" htmlFor="h1">
+              <input
+                id="h1"
+                type="text"
+                className={inputClass}
+                value={h1}
+                onChange={(e) => setH1(e.target.value)}
+                placeholder={h1Placeholder}
+              />
+            </Field>
           </div>
 
           <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5">
@@ -560,7 +587,7 @@ export default function HypothesisTesting() {
 
             <Card
               title={`3. ${isT ? "t-distribution" : "Normal distribution"} graph`}
-              subtitle="The shaded area is the rejection region. The indigo line is your test statistic."
+              subtitle="The acceptance and rejection regions are shaded. The vertical indigo line is your test statistic."
               className="border-slate-200/90 shadow-[0_12px_28px_rgba(15,23,42,0.045)]"
             >
               <NormalDistributionChart
