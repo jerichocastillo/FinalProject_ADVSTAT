@@ -54,7 +54,11 @@ export default function LoginForm({
   }
 
   return (
-    <AuthShell title="Log in" subtitle="Welcome back. Log in to use the statistical tools.">
+    <AuthShell
+      title="Log in"
+      subtitle="Welcome back. Log in to use the statistical tools."
+      brandLabel="Advanced Statistics"
+    >
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         {justRegistered && !error && (
           <Notice tone="info" title="Account created">
@@ -88,16 +92,19 @@ export default function LoginForm({
         <button type="submit" className={`${primaryButton} w-full`} disabled={loading}>
           {loading ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin" /> Logging in…
+              <Loader2 className="h-4 w-4" /> Logging in…
             </>
           ) : (
             "Log in"
           )}
         </button>
 
-        <p className="text-center text-sm text-slate-600">
+        <p className="border-t border-slate-100 pt-4 text-center text-sm text-slate-700">
           Don&apos;t have an account?{" "}
-          <Link href="/register" className="font-semibold text-indigo-600 hover:text-indigo-700">
+          <Link
+            href="/register"
+            className="rounded-lg font-medium text-indigo-600 transition-colors duration-150 hover:text-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2"
+          >
             Register
           </Link>
         </p>

@@ -12,7 +12,7 @@ import PasswordInput from "./PasswordInput";
 function FieldError({ id, message }: { id: string; message?: string }) {
   if (!message) return null;
   return (
-    <p id={id} className="mt-1 text-xs text-red-600">
+    <p id={id} className="mt-1 text-xs text-rose-700">
       {message}
     </p>
   );
@@ -65,7 +65,11 @@ export default function RegisterForm() {
   }
 
   return (
-    <AuthShell title="Create an account" subtitle="Register to use the statistical tools.">
+    <AuthShell
+      title="Create an account"
+      subtitle="Register to use the statistical tools."
+      brandLabel="Advanced Statistics"
+    >
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         {formError && <Notice tone="error">{formError}</Notice>}
 
@@ -130,16 +134,19 @@ export default function RegisterForm() {
         <button type="submit" className={`${primaryButton} w-full`} disabled={loading}>
           {loading ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin" /> Creating account…
+              <Loader2 className="h-4 w-4" /> Creating account…
             </>
           ) : (
             "Register"
           )}
         </button>
 
-        <p className="text-center text-sm text-slate-600">
+        <p className="border-t border-slate-100 pt-4 text-center text-sm text-slate-700">
           Already have an account?{" "}
-          <Link href="/login" className="font-semibold text-indigo-600 hover:text-indigo-700">
+          <Link
+            href="/login"
+            className="rounded-lg font-medium text-indigo-600 transition-colors duration-150 hover:text-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2"
+          >
             Log in
           </Link>
         </p>

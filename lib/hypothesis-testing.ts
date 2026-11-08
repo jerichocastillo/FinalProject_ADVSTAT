@@ -1,4 +1,5 @@
 import { fmt, isBlank, parseNumber } from "./format";
+import { tQuantile } from "./t-distribution";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                                */
@@ -6,7 +7,7 @@ import { fmt, isBlank, parseNumber } from "./format";
 
 export type Alpha = 0.1 | 0.05 | 0.01;
 export type Tail = "left" | "right" | "two";
-export type TestKind = "one-sample" | "two-sample";
+export type TestKind = "z-one" | "z-two" | "t-one" | "t-two";
 
 export const ALPHA_OPTIONS: Alpha[] = [0.1, 0.05, 0.01];
 
@@ -16,6 +17,13 @@ export const TAIL_LABELS: Record<Tail, string> = {
   two: "Two-tailed",
 };
 
+export const TEST_LABELS: Record<TestKind, string> = {
+  "z-one": "One-sample Z-test (σ known)",
+  "z-two": "Two-sample Z-test (σ₁ and σ₂ known)",
+  "t-one": "One-sample t-test (σ unknown)",
+  "t-two": "Two-sample t-test (σ unknown)",
+};
+
 /** Critical Z values from the standard normal table. */
 const CRITICAL_Z: Record<Alpha, { oneTail: number; twoTail: number }> = {
   0.1: { oneTail: 1.2816, twoTail: 1.6449 },
@@ -23,22 +31,21 @@ const CRITICAL_Z: Record<Alpha, { oneTail: number; twoTail: number }> = {
   0.01: { oneTail: 2.3263, twoTail: 2.5758 },
 };
 
-export interface OneSampleRaw {
+interface BaseRaw {
   h0: string;
   h1: string;
   alpha: Alpha;
   tail: Tail;
+}
+
+export interface OneSampleRaw extends BaseRaw {
   n: string;
   sampleMean: string;
   mu0: string;
   sigma: string;
 }
 
-export interface TwoSampleRaw {
-  h0: string;
-  h1: string;
-  alpha: Alpha;
-  tail: Tail;
+export interface TwoSampleRaw extends BaseRaw {
   n1: string;
   mean1: string;
   sigma1: string;
@@ -47,17 +54,40 @@ export interface TwoSampleRaw {
   sigma2: string;
 }
 
-export interface ZTestOutcome {
+export interface OneSampleTRaw extends BaseRaw {
+  n: string;
+  sampleMean: string;
+  mu0: string;
+  /** Sample standard deviation */
+  s: string;
+}
+
+export interface TwoSampleTRaw extends BaseRaw {
+  n1: string;
+  mean1: string;
+  s1: string;
+  n2: string;
+  mean2: string;
+  s2: string;
+  /** true: pooled variance (equal variances). false: Welch (unequal variances). */
+  equalVariances: boolean;
+}
+
+export interface TestOutcome {
   kind: TestKind;
+  statisticName: "z" | "t";
   testName: string;
   formula: string;
   /** The formula with the user's numbers substituted in. */
   substitution: string;
   standardError: number;
-  zStat: number;
+  /** The test statistic (z or t). */
+  statistic: number;
+  /** Degrees of freedom (t-tests only). */
+  df: number | null;
   alpha: Alpha;
   tail: Tail;
-  /** Critical Z value(s): one for a one-tailed test, ±c for two-tailed. */
+  /** Critical value(s): one for a one-tailed test, ±c for two-tailed. */
   criticalValues: number[];
   rejectionRegion: string;
   reject: boolean;
@@ -82,57 +112,73 @@ export function getCriticalValues(alpha: Alpha, tail: Tail): number[] {
   return [-twoTail, twoTail];
 }
 
-function describeRegion(tail: Tail, critical: number[]): string {
-  if (tail === "left") return `z < ${fmt(critical[0], 4)}`;
-  if (tail === "right") return `z > ${fmt(critical[0], 4)}`;
-  return `z < ${fmt(critical[0], 4)} or z > ${fmt(critical[1], 4)}`;
+/** Critical t value(s) for df degrees of freedom, rounded to 3 decimals like a printed t-table. */
+export function getTCriticalValues(alpha: Alpha, tail: Tail, df: number): number[] {
+  const upperProbability = tail === "two" ? 1 - alpha / 2 : 1 - alpha;
+  const c = Number(tQuantile(upperProbability, df).toFixed(3));
+  if (tail === "left") return [-c];
+  if (tail === "right") return [c];
+  return [-c, c];
+}
+
+function describeRegion(symbol: string, tail: Tail, critical: number[]): string {
+  if (tail === "left") return `${symbol} < ${fmt(critical[0], 4)}`;
+  if (tail === "right") return `${symbol} > ${fmt(critical[0], 4)}`;
+  return `${symbol} < ${fmt(critical[0], 4)} or ${symbol} > ${fmt(critical[1], 4)}`;
 }
 
 /**
- * Left-tailed:  reject H0 when z < critical (negative) value.
- * Right-tailed: reject H0 when z > critical value.
- * Two-tailed:   reject H0 when |z| > positive critical value.
+ * Left-tailed:  reject H0 when the statistic < critical (negative) value.
+ * Right-tailed: reject H0 when the statistic > critical value.
+ * Two-tailed:   reject H0 when |statistic| > positive critical value.
  */
-export function shouldReject(z: number, tail: Tail, critical: number[]): boolean {
-  if (tail === "left") return z < critical[0];
-  if (tail === "right") return z > critical[0];
-  return Math.abs(z) > critical[1];
+export function shouldReject(statistic: number, tail: Tail, critical: number[]): boolean {
+  if (tail === "left") return statistic < critical[0];
+  if (tail === "right") return statistic > critical[0];
+  return Math.abs(statistic) > critical[1];
 }
 
 /* ------------------------------------------------------------------ */
 /* Default hypothesis statements                                        */
 /* ------------------------------------------------------------------ */
 
+function tailSymbol(tail: Tail): string {
+  return tail === "left" ? "<" : tail === "right" ? ">" : "≠";
+}
+
 function defaultOneSampleHypotheses(tail: Tail, mu0: number) {
   const m = fmt(mu0);
-  const symbol = tail === "left" ? "<" : tail === "right" ? ">" : "≠";
-  return { h0: `μ = ${m}`, h1: `μ ${symbol} ${m}` };
+  return { h0: `μ = ${m}`, h1: `μ ${tailSymbol(tail)} ${m}` };
 }
 
 function defaultTwoSampleHypotheses(tail: Tail) {
-  const symbol = tail === "left" ? "<" : tail === "right" ? ">" : "≠";
-  return { h0: "μ₁ = μ₂", h1: `μ₁ ${symbol} μ₂` };
+  return { h0: "μ₁ = μ₂", h1: `μ₁ ${tailSymbol(tail)} μ₂` };
 }
 
 /* ------------------------------------------------------------------ */
-/* Shared result builder                                                */
+/* Shared decision builder                                              */
 /* ------------------------------------------------------------------ */
 
 function buildDecision(
-  z: number,
+  symbol: "z" | "t",
+  statistic: number,
+  criticalValues: number[],
   alpha: Alpha,
   tail: Tail,
   h0: string,
   h1: string
-): Pick<ZTestOutcome, "criticalValues" | "rejectionRegion" | "reject" | "decision" | "interpretation"> {
-  const criticalValues = getCriticalValues(alpha, tail);
-  const rejectionRegion = describeRegion(tail, criticalValues);
-  const reject = shouldReject(z, tail, criticalValues);
+): Pick<TestOutcome, "criticalValues" | "rejectionRegion" | "reject" | "decision" | "interpretation"> {
+  const rejectionRegion = describeRegion(symbol, tail, criticalValues);
+  const reject = shouldReject(statistic, tail, criticalValues);
 
   const compare =
     tail === "two"
-      ? `|z| = ${fmt(Math.abs(z))} ${reject ? ">" : "≤"} ${fmt(criticalValues[1])}`
-      : `z = ${fmt(z)} ${tail === "left" ? (reject ? "<" : "≥") : reject ? ">" : "≤"} ${fmt(criticalValues[0])}`;
+      ? `|${symbol}| = ${fmt(Math.abs(statistic))} ${reject ? ">" : "≤"} ${fmt(criticalValues[1])}`
+      : `${symbol} = ${fmt(statistic)} ${
+          tail === "left" ? (reject ? "<" : "≥") : reject ? ">" : "≤"
+        } ${fmt(criticalValues[0])}`;
+
+  const level = `${fmt(alpha * 100, 2)}% level of significance`;
 
   if (reject) {
     return {
@@ -141,8 +187,8 @@ function buildDecision(
       reject,
       decision: "Reject H₀",
       interpretation:
-        `The test statistic z = ${fmt(z)} falls in the rejection region (${rejectionRegion}) because ${compare}. ` +
-        `So we reject H₀ (${h0}) at the ${fmt(alpha * 100, 2)}% level of significance. ` +
+        `The test statistic ${symbol} = ${fmt(statistic)} falls in the rejection region (${rejectionRegion}) because ${compare}. ` +
+        `So we reject H₀ (${h0}) at the ${level}. ` +
         `There is enough evidence to support H₁ (${h1}).`,
     };
   }
@@ -153,8 +199,8 @@ function buildDecision(
     reject,
     decision: "Fail to reject H₀",
     interpretation:
-      `The test statistic z = ${fmt(z)} does not fall in the rejection region (${rejectionRegion}) because ${compare}. ` +
-      `So we fail to reject H₀ (${h0}) at the ${fmt(alpha * 100, 2)}% level of significance. ` +
+      `The test statistic ${symbol} = ${fmt(statistic)} does not fall in the rejection region (${rejectionRegion}) because ${compare}. ` +
+      `So we fail to reject H₀ (${h0}) at the ${level}. ` +
       `There is not enough evidence to support H₁ (${h1}). ` +
       `This does not prove that H₀ is true; it only means the sample did not give strong enough evidence against it.`,
   };
@@ -164,7 +210,7 @@ function buildDecision(
 /* Input validation helpers                                             */
 /* ------------------------------------------------------------------ */
 
-function readSampleSize(text: string, label: string, errors: string[]): number | null {
+function readSampleSize(text: string, label: string, errors: string[], min = 1): number | null {
   if (isBlank(text)) {
     errors.push(`${label} is required.`);
     return null;
@@ -174,8 +220,8 @@ function readSampleSize(text: string, label: string, errors: string[]): number |
     errors.push(`${label} must be a number.`);
     return null;
   }
-  if (!Number.isInteger(value) || value < 1) {
-    errors.push(`${label} must be a whole number of at least 1.`);
+  if (!Number.isInteger(value) || value < min) {
+    errors.push(`${label} must be a whole number of at least ${min}.`);
     return null;
   }
   return value;
@@ -204,12 +250,14 @@ function readPositive(text: string, label: string, errors: string[]): number | n
   return value;
 }
 
+const NOT_FINITE = ["The test statistic could not be calculated from these values."];
+
 /* ------------------------------------------------------------------ */
 /* One-sample Z-test                                                    */
 /* ------------------------------------------------------------------ */
 
 /** z = (x̄ − μ₀) / (σ / √n) */
-export function runOneSampleZTest(raw: OneSampleRaw): Validation<ZTestOutcome> {
+export function runOneSampleZTest(raw: OneSampleRaw): Validation<TestOutcome> {
   const errors: string[] = [];
   const n = readSampleSize(raw.n, "Sample size (n)", errors);
   const sampleMean = readNumber(raw.sampleMean, "Sample mean (x̄)", errors);
@@ -221,10 +269,8 @@ export function runOneSampleZTest(raw: OneSampleRaw): Validation<ZTestOutcome> {
   }
 
   const standardError = sigma / Math.sqrt(n);
-  const zStat = (sampleMean - mu0) / standardError;
-  if (!Number.isFinite(zStat)) {
-    return { ok: false, errors: ["The test statistic could not be calculated from these values."] };
-  }
+  const z = (sampleMean - mu0) / standardError;
+  if (!Number.isFinite(z)) return { ok: false, errors: NOT_FINITE };
 
   const defaults = defaultOneSampleHypotheses(raw.tail, mu0);
   const h0 = isBlank(raw.h0) ? defaults.h0 : raw.h0.trim();
@@ -240,15 +286,17 @@ export function runOneSampleZTest(raw: OneSampleRaw): Validation<ZTestOutcome> {
   return {
     ok: true,
     value: {
-      kind: "one-sample",
+      kind: "z-one",
+      statisticName: "z",
       testName: "One-sample Z-test (mean)",
       formula: "z = (x̄ − μ₀) / (σ / √n)",
-      substitution: `z = (${fmt(sampleMean)} − ${fmt(mu0)}) / (${fmt(sigma)} / √${n}) = ${fmt(sampleMean - mu0)} / ${fmt(standardError)} = ${fmt(zStat)}`,
+      substitution: `z = (${fmt(sampleMean)} − ${fmt(mu0)}) / (${fmt(sigma)} / √${n}) = ${fmt(sampleMean - mu0)} / ${fmt(standardError)} = ${fmt(z)}`,
       standardError,
-      zStat,
+      statistic: z,
+      df: null,
       alpha: raw.alpha,
       tail: raw.tail,
-      ...buildDecision(zStat, raw.alpha, raw.tail, h0, h1),
+      ...buildDecision("z", z, getCriticalValues(raw.alpha, raw.tail), raw.alpha, raw.tail, h0, h1),
       h0,
       h1,
       assumptions: [
@@ -266,7 +314,7 @@ export function runOneSampleZTest(raw: OneSampleRaw): Validation<ZTestOutcome> {
 /* ------------------------------------------------------------------ */
 
 /** z = (x̄₁ − x̄₂) / √(σ₁²/n₁ + σ₂²/n₂), testing H₀: μ₁ = μ₂ */
-export function runTwoSampleZTest(raw: TwoSampleRaw): Validation<ZTestOutcome> {
+export function runTwoSampleZTest(raw: TwoSampleRaw): Validation<TestOutcome> {
   const errors: string[] = [];
   const n1 = readSampleSize(raw.n1, "Sample 1 size (n₁)", errors);
   const mean1 = readNumber(raw.mean1, "Sample 1 mean (x̄₁)", errors);
@@ -288,10 +336,8 @@ export function runTwoSampleZTest(raw: TwoSampleRaw): Validation<ZTestOutcome> {
   }
 
   const standardError = Math.sqrt((sigma1 * sigma1) / n1 + (sigma2 * sigma2) / n2);
-  const zStat = (mean1 - mean2) / standardError;
-  if (!Number.isFinite(zStat)) {
-    return { ok: false, errors: ["The test statistic could not be calculated from these values."] };
-  }
+  const z = (mean1 - mean2) / standardError;
+  if (!Number.isFinite(z)) return { ok: false, errors: NOT_FINITE };
 
   const defaults = defaultTwoSampleHypotheses(raw.tail);
   const h0 = isBlank(raw.h0) ? defaults.h0 : raw.h0.trim();
@@ -307,15 +353,17 @@ export function runTwoSampleZTest(raw: TwoSampleRaw): Validation<ZTestOutcome> {
   return {
     ok: true,
     value: {
-      kind: "two-sample",
+      kind: "z-two",
+      statisticName: "z",
       testName: "Two-sample Z-test (difference of two independent means)",
       formula: "z = (x̄₁ − x̄₂) / √(σ₁²/n₁ + σ₂²/n₂)",
-      substitution: `z = (${fmt(mean1)} − ${fmt(mean2)}) / √(${fmt(sigma1 * sigma1)}/${n1} + ${fmt(sigma2 * sigma2)}/${n2}) = ${fmt(mean1 - mean2)} / ${fmt(standardError)} = ${fmt(zStat)}`,
+      substitution: `z = (${fmt(mean1)} − ${fmt(mean2)}) / √(${fmt(sigma1 * sigma1)}/${n1} + ${fmt(sigma2 * sigma2)}/${n2}) = ${fmt(mean1 - mean2)} / ${fmt(standardError)} = ${fmt(z)}`,
       standardError,
-      zStat,
+      statistic: z,
+      df: null,
       alpha: raw.alpha,
       tail: raw.tail,
-      ...buildDecision(zStat, raw.alpha, raw.tail, h0, h1),
+      ...buildDecision("z", z, getCriticalValues(raw.alpha, raw.tail), raw.alpha, raw.tail, h0, h1),
       h0,
       h1,
       assumptions: [
@@ -325,6 +373,156 @@ export function runTwoSampleZTest(raw: TwoSampleRaw): Validation<ZTestOutcome> {
         "H₀ states that the two population means are equal (μ₁ − μ₂ = 0).",
       ],
       warnings,
+    },
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* One-sample t-test                                                    */
+/* ------------------------------------------------------------------ */
+
+/** t = (x̄ − μ₀) / (s / √n), with df = n − 1 */
+export function runOneSampleTTest(raw: OneSampleTRaw): Validation<TestOutcome> {
+  const errors: string[] = [];
+  const n = readSampleSize(raw.n, "Sample size (n)", errors, 2);
+  const sampleMean = readNumber(raw.sampleMean, "Sample mean (x̄)", errors);
+  const mu0 = readNumber(raw.mu0, "Hypothesized mean (μ₀)", errors);
+  const s = readPositive(raw.s, "Sample standard deviation (s)", errors);
+
+  if (errors.length > 0 || n === null || sampleMean === null || mu0 === null || s === null) {
+    return { ok: false, errors };
+  }
+
+  const df = n - 1;
+  const standardError = s / Math.sqrt(n);
+  const t = (sampleMean - mu0) / standardError;
+  if (!Number.isFinite(t)) return { ok: false, errors: NOT_FINITE };
+
+  const defaults = defaultOneSampleHypotheses(raw.tail, mu0);
+  const h0 = isBlank(raw.h0) ? defaults.h0 : raw.h0.trim();
+  const h1 = isBlank(raw.h1) ? defaults.h1 : raw.h1.trim();
+
+  return {
+    ok: true,
+    value: {
+      kind: "t-one",
+      statisticName: "t",
+      testName: "One-sample t-test (mean)",
+      formula: "t = (x̄ − μ₀) / (s / √n),   df = n − 1",
+      substitution: `t = (${fmt(sampleMean)} − ${fmt(mu0)}) / (${fmt(s)} / √${n}) = ${fmt(sampleMean - mu0)} / ${fmt(standardError)} = ${fmt(t)},   df = ${n} − 1 = ${df}`,
+      standardError,
+      statistic: t,
+      df,
+      alpha: raw.alpha,
+      tail: raw.tail,
+      ...buildDecision("t", t, getTCriticalValues(raw.alpha, raw.tail, df), raw.alpha, raw.tail, h0, h1),
+      h0,
+      h1,
+      assumptions: [
+        "The population standard deviation is unknown, so the sample standard deviation s is used.",
+        "The sample is random and the observations are independent.",
+        "The population is approximately normal (this matters most when n is small).",
+      ],
+      warnings: [],
+    },
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Two-sample t-test                                                    */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Pooled (equal variances):  t = (x̄₁ − x̄₂) / (sp·√(1/n₁ + 1/n₂)),  df = n₁ + n₂ − 2
+ * Welch (unequal variances): t = (x̄₁ − x̄₂) / √(s₁²/n₁ + s₂²/n₂),  df by Welch–Satterthwaite
+ */
+export function runTwoSampleTTest(raw: TwoSampleTRaw): Validation<TestOutcome> {
+  const errors: string[] = [];
+  const n1 = readSampleSize(raw.n1, "Sample 1 size (n₁)", errors, 2);
+  const mean1 = readNumber(raw.mean1, "Sample 1 mean (x̄₁)", errors);
+  const s1 = readPositive(raw.s1, "Sample 1 standard deviation (s₁)", errors);
+  const n2 = readSampleSize(raw.n2, "Sample 2 size (n₂)", errors, 2);
+  const mean2 = readNumber(raw.mean2, "Sample 2 mean (x̄₂)", errors);
+  const s2 = readPositive(raw.s2, "Sample 2 standard deviation (s₂)", errors);
+
+  if (
+    errors.length > 0 ||
+    n1 === null ||
+    mean1 === null ||
+    s1 === null ||
+    n2 === null ||
+    mean2 === null ||
+    s2 === null
+  ) {
+    return { ok: false, errors };
+  }
+
+  const v1 = s1 * s1;
+  const v2 = s2 * s2;
+  let standardError: number;
+  let df: number;
+  let formula: string;
+  let working: string;
+  let assumptions: string[];
+
+  if (raw.equalVariances) {
+    df = n1 + n2 - 2;
+    const pooledVariance = ((n1 - 1) * v1 + (n2 - 1) * v2) / df;
+    standardError = Math.sqrt(pooledVariance * (1 / n1 + 1 / n2));
+    formula =
+      "t = (x̄₁ − x̄₂) / (sp·√(1/n₁ + 1/n₂)),   sp² = [(n₁−1)s₁² + (n₂−1)s₂²] / (n₁ + n₂ − 2),   df = n₁ + n₂ − 2";
+    working =
+      `sp² = [(${n1}−1)(${fmt(v1)}) + (${n2}−1)(${fmt(v2)})] / ${df} = ${fmt(pooledVariance)};   ` +
+      `SE = √[${fmt(pooledVariance)}(1/${n1} + 1/${n2})] = ${fmt(standardError)};   df = ${n1} + ${n2} − 2 = ${df}`;
+    assumptions = [
+      "The two samples are random and independent of each other.",
+      "Both populations are approximately normal.",
+      "The two population variances are assumed equal (pooled variance).",
+      "H₀ states that the two population means are equal (μ₁ − μ₂ = 0).",
+    ];
+  } else {
+    const a = v1 / n1;
+    const b = v2 / n2;
+    standardError = Math.sqrt(a + b);
+    df = ((a + b) * (a + b)) / ((a * a) / (n1 - 1) + (b * b) / (n2 - 1));
+    formula =
+      "t = (x̄₁ − x̄₂) / √(s₁²/n₁ + s₂²/n₂),   df = (s₁²/n₁ + s₂²/n₂)² / [ (s₁²/n₁)²/(n₁−1) + (s₂²/n₂)²/(n₂−1) ]";
+    working = `SE = √(${fmt(v1)}/${n1} + ${fmt(v2)}/${n2}) = ${fmt(standardError)};   df = ${fmt(df, 2)}`;
+    assumptions = [
+      "The two samples are random and independent of each other.",
+      "Both populations are approximately normal.",
+      "The population variances are not assumed equal (Welch's t-test).",
+      "H₀ states that the two population means are equal (μ₁ − μ₂ = 0).",
+    ];
+  }
+
+  const t = (mean1 - mean2) / standardError;
+  if (!Number.isFinite(t) || !Number.isFinite(df)) return { ok: false, errors: NOT_FINITE };
+
+  const defaults = defaultTwoSampleHypotheses(raw.tail);
+  const h0 = isBlank(raw.h0) ? defaults.h0 : raw.h0.trim();
+  const h1 = isBlank(raw.h1) ? defaults.h1 : raw.h1.trim();
+
+  return {
+    ok: true,
+    value: {
+      kind: "t-two",
+      statisticName: "t",
+      testName: raw.equalVariances
+        ? "Two-sample t-test (equal variances, pooled)"
+        : "Two-sample t-test (unequal variances, Welch)",
+      formula,
+      substitution: `${working};   t = (${fmt(mean1)} − ${fmt(mean2)}) / ${fmt(standardError)} = ${fmt(t)}`,
+      standardError,
+      statistic: t,
+      df,
+      alpha: raw.alpha,
+      tail: raw.tail,
+      ...buildDecision("t", t, getTCriticalValues(raw.alpha, raw.tail, df), raw.alpha, raw.tail, h0, h1),
+      h0,
+      h1,
+      assumptions,
+      warnings: [],
     },
   };
 }

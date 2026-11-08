@@ -21,7 +21,7 @@ export default function AppShell({ user }: { user: AccountUser }) {
   }
 
   return (
-    <div className="min-h-screen lg:flex">
+    <div className="min-h-screen bg-transparent lg:flex">
       <Sidebar
         active={section}
         onNavigate={navigate}
@@ -32,12 +32,12 @@ export default function AppShell({ user }: { user: AccountUser }) {
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Top bar (mobile only) */}
-        <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur lg:hidden">
+        <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-slate-200/80 bg-white/85 px-4 py-3 backdrop-blur-md lg:hidden">
           <button
             type="button"
             onClick={() => setMenuOpen(true)}
             aria-label="Open navigation menu"
-            className="rounded-md p-2 text-slate-700 hover:bg-slate-100"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition-colors duration-150 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
           >
             <Menu className="h-5 w-5" />
           </button>
@@ -46,7 +46,7 @@ export default function AppShell({ user }: { user: AccountUser }) {
           </span>
         </header>
 
-        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 lg:px-10">
           {/* The tools stay mounted so typed data is kept while switching sections. */}
           <div hidden={section !== "dashboard"}>
             <Dashboard onNavigate={navigate} />

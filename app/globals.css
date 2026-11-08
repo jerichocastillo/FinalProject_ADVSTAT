@@ -1,15 +1,90 @@
 @import "tailwindcss";
 
+@theme inline {
+  --font-sans: var(--font-inter);
+  --color-page: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-soft: #f5f3ff;
+  --color-surface-alt: #f1f5f9;
+  --color-divider: #e2e8f0;
+  --color-border: #e2e8f0;
+  --color-heading: #1e293b;
+  --color-body: #334155;
+  --color-muted: #64748b;
+  --color-accent: #4f46e5;
+  --color-accent-soft: #eef2ff;
+  --color-accent-secondary: #818cf8;
+  --color-reject: #ef4444;
+  --color-reject-light: #fee2e2;
+  --color-reject-text: #b91c1c;
+  --color-information-light: #eef2ff;
+  --color-information-text: #312e81;
+}
+
+@layer base {
+  p,
+  li {
+    text-align: justify;
+  }
+}
+
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --page-bg: #f8fafc;
+  --surface: #ffffff;
+  --surface-soft: #f5f3ff;
+  --surface-alt: #f1f5f9;
+  --primary: #4f46e5;
+  --primary-soft: #eef2ff;
+  --secondary: #818cf8;
+  --heading: #1e293b;
+  --text: #334155;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --shadow: 0 14px 30px rgba(15, 23, 42, 0.06);
+}
+
+html {
+  min-height: 100%;
+  background: var(--page-bg);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family:
-    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
-    sans-serif;
+  min-height: 100vh;
+  margin: 0;
+  background: var(--page-bg);
+  color: var(--text);
+  font-family: var(--font-inter), sans-serif;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: rgba(79, 70, 229, 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
