@@ -17,7 +17,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Invalid request." }, { status: 400 });
   }
 
-  // The server checks everything again, even though the form already did.
   const parsed = validateRegistration(body as Record<string, unknown>);
   if (!parsed.ok) {
     return NextResponse.json(
@@ -44,7 +43,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ message: "Account created. Please log in." }, { status: 201 });
   } catch (error) {
-    // Two people registering the same email at the same moment: the unique index catches it.
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       return NextResponse.json(duplicate, { status: 409 });
     }

@@ -1,10 +1,6 @@
 import { fmt, isBlank, parseNumber } from "./format";
 
-/* ------------------------------------------------------------------ */
-/* Types                                                                */
-/* ------------------------------------------------------------------ */
 
-/** One row of the data-entry table exactly as typed by the user. */
 export interface RawRow {
   id: number;
   x: string;
@@ -17,9 +13,7 @@ export interface Point {
 }
 
 export interface ParsedData {
-  /** Rows that have a valid number in both X and Y. */
   points: Point[];
-  /** Human-readable problems (incomplete or non-numeric rows). */
   errors: string[];
 }
 
@@ -27,19 +21,12 @@ export interface RegressionResult {
   n: number;
   meanX: number;
   meanY: number;
-  /** Σ(x − x̄)² */
   sxx: number;
-  /** Σ(y − ȳ)² */
   syy: number;
-  /** Σ(x − x̄)(y − ȳ) */
   sxy: number;
-  /** B, the slope */
   slope: number;
-  /** A, the y-intercept */
   intercept: number;
-  /** Pearson r, or null when it cannot be calculated */
   r: number | null;
-  /** Explains why r is null */
   rNote: string | null;
   minX: number;
   maxX: number;
@@ -55,15 +42,7 @@ export interface CorrelationInfo {
   summary: string;
 }
 
-/* ------------------------------------------------------------------ */
-/* Input handling                                                       */
-/* ------------------------------------------------------------------ */
 
-/**
- * Reads the table. Completely empty rows are ignored. A row with only one
- * value, or with text that is not a number, is reported as an error and is
- * never used in the calculation.
- */
 export function parseRows(rows: RawRow[]): ParsedData {
   const points: Point[] = [];
   const errors: string[] = [];
@@ -73,7 +52,7 @@ export function parseRows(rows: RawRow[]): ParsedData {
     const xBlank = isBlank(row.x);
     const yBlank = isBlank(row.y);
 
-    if (xBlank && yBlank) return; // empty row: ignore
+    if (xBlank && yBlank) return;
 
     if (xBlank || yBlank) {
       errors.push(`${label}: enter both X and Y (one of them is empty).`);
@@ -93,11 +72,7 @@ export function parseRows(rows: RawRow[]): ParsedData {
   return { points, errors };
 }
 
-/* ------------------------------------------------------------------ */
-/* Calculations                                                         */
-/* ------------------------------------------------------------------ */
 
-/** Least-squares regression and Pearson correlation. */
 export function computeRegression(points: Point[]): RegressionOutcome {
   const n = points.length;
   if (n < 2) {
@@ -129,8 +104,8 @@ export function computeRegression(points: Point[]): RegressionOutcome {
     sxy += dx * dy;
   }
 
-  const slope = sxy / sxx; // B
-  const intercept = meanY - slope * meanX; // A
+  const slope = sxy / sxx;
+  const intercept = meanY - slope * meanX;
 
   let r: number | null = null;
   let rNote: string | null = null;
@@ -142,7 +117,6 @@ export function computeRegression(points: Point[]): RegressionOutcome {
     if (!Number.isFinite(denominator) || denominator === 0) {
       rNote = "r cannot be calculated because the denominator is zero or not a finite number.";
     } else {
-      // Clamp to guard against tiny floating-point drift such as 1.0000000000000002
       r = Math.max(-1, Math.min(1, sxy / denominator));
     }
   }
@@ -166,12 +140,10 @@ export function computeRegression(points: Point[]): RegressionOutcome {
   };
 }
 
-/** ŷ = A + Bx */
 export function predictY(result: Pick<RegressionResult, "intercept" | "slope">, x: number): number {
   return result.intercept + result.slope * x;
 }
 
-/** Reads |r| using the ranges from the lesson. */
 export function describeCorrelation(r: number | null, rNote: string | null): CorrelationInfo {
   if (r === null) {
     return {
@@ -209,7 +181,6 @@ export function describeCorrelation(r: number | null, rNote: string | null): Cor
   };
 }
 
-/** Builds the equation text, e.g. "ŷ = 52.4 + 6.1x" or "ŷ = 10 − 2.5x". */
 export function formatEquation(intercept: number, slope: number, digits = 4): string {
   const a = fmt(intercept, digits);
   const b = fmt(Math.abs(slope), digits);

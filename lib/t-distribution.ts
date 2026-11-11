@@ -1,9 +1,4 @@
-/**
- * Student's t-distribution helpers (no external libraries).
- * Used to find critical t values for any degrees of freedom and to draw the curve.
- */
 
-/** Natural log of the gamma function (Lanczos approximation). */
 function logGamma(x: number): number {
   const coefficients = [
     76.18009172947146, -86.50532032941677, 24.01409824083091, -1.231739572450155,
@@ -20,7 +15,6 @@ function logGamma(x: number): number {
   return -tmp + Math.log((2.5066282746310005 * series) / x);
 }
 
-/** Continued fraction used by the incomplete beta function. */
 function betaContinuedFraction(a: number, b: number, x: number): number {
   const MAX_ITERATIONS = 300;
   const EPSILON = 3e-14;
@@ -58,7 +52,6 @@ function betaContinuedFraction(a: number, b: number, x: number): number {
   return h;
 }
 
-/** Regularized incomplete beta function I_x(a, b). */
 function regularizedIncompleteBeta(x: number, a: number, b: number): number {
   if (x <= 0) return 0;
   if (x >= 1) return 1;
@@ -71,14 +64,12 @@ function regularizedIncompleteBeta(x: number, a: number, b: number): number {
   return 1 - (front * betaContinuedFraction(b, a, 1 - x)) / b;
 }
 
-/** Cumulative probability P(T ≤ t) for a t-distribution with df degrees of freedom. */
 export function tCdf(t: number, df: number): number {
   const x = df / (df + t * t);
   const tail = regularizedIncompleteBeta(x, df / 2, 0.5);
   return t >= 0 ? 1 - 0.5 * tail : 0.5 * tail;
 }
 
-/** The t value whose cumulative probability is p (the inverse of tCdf). */
 export function tQuantile(p: number, df: number): number {
   if (!(p > 0 && p < 1) || !(df > 0)) return NaN;
   if (p === 0.5) return 0;
@@ -95,7 +86,6 @@ export function tQuantile(p: number, df: number): number {
   return (low + high) / 2;
 }
 
-/** Probability density of the t-distribution (used to draw the curve). */
 export function tPdf(t: number, df: number): number {
   const constant = Math.exp(logGamma((df + 1) / 2) - logGamma(df / 2)) / Math.sqrt(df * Math.PI);
   return constant * Math.pow(1 + (t * t) / df, -(df + 1) / 2);

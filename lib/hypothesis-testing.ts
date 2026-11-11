@@ -1,9 +1,6 @@
 import { fmt, isBlank, parseNumber } from "./format";
 import { tQuantile } from "./t-distribution";
 
-/* ------------------------------------------------------------------ */
-/* Types                                                                */
-/* ------------------------------------------------------------------ */
 
 export type Alpha = 0.1 | 0.05 | 0.01;
 export type Tail = "left" | "right" | "two";
@@ -24,7 +21,6 @@ export const TEST_LABELS: Record<TestKind, string> = {
   "t-two": "Two-sample t-test (σ unknown)",
 };
 
-/** Critical Z values from the standard normal table. */
 const CRITICAL_Z: Record<Alpha, { oneTail: number; twoTail: number }> = {
   0.1: { oneTail: 1.2816, twoTail: 1.6449 },
   0.05: { oneTail: 1.6449, twoTail: 1.96 },
@@ -58,7 +54,6 @@ export interface OneSampleTRaw extends BaseRaw {
   n: string;
   sampleMean: string;
   mu0: string;
-  /** Sample standard deviation */
   s: string;
 }
 
@@ -69,7 +64,6 @@ export interface TwoSampleTRaw extends BaseRaw {
   n2: string;
   mean2: string;
   s2: string;
-  /** true: pooled variance (equal variances). false: Welch (unequal variances). */
   equalVariances: boolean;
 }
 
@@ -78,16 +72,12 @@ export interface TestOutcome {
   statisticName: "z" | "t";
   testName: string;
   formula: string;
-  /** The formula with the user's numbers substituted in. */
   substitution: string;
   standardError: number;
-  /** The test statistic (z or t). */
   statistic: number;
-  /** Degrees of freedom (t-tests only). */
   df: number | null;
   alpha: Alpha;
   tail: Tail;
-  /** Critical value(s): one for a one-tailed test, ±c for two-tailed. */
   criticalValues: number[];
   rejectionRegion: string;
   reject: boolean;
@@ -101,9 +91,6 @@ export interface TestOutcome {
 
 export type Validation<T> = { ok: true; value: T } | { ok: false; errors: string[] };
 
-/* ------------------------------------------------------------------ */
-/* Critical values and decision rule                                    */
-/* ------------------------------------------------------------------ */
 
 export function getCriticalValues(alpha: Alpha, tail: Tail): number[] {
   const { oneTail, twoTail } = CRITICAL_Z[alpha];
@@ -112,7 +99,6 @@ export function getCriticalValues(alpha: Alpha, tail: Tail): number[] {
   return [-twoTail, twoTail];
 }
 
-/** Critical t value(s) for df degrees of freedom, rounded to 3 decimals like a printed t-table. */
 export function getTCriticalValues(alpha: Alpha, tail: Tail, df: number): number[] {
   const upperProbability = tail === "two" ? 1 - alpha / 2 : 1 - alpha;
   const c = Number(tQuantile(upperProbability, df).toFixed(3));
@@ -127,20 +113,12 @@ function describeRegion(symbol: string, tail: Tail, critical: number[]): string 
   return `${symbol} < ${fmt(critical[0], 4)} or ${symbol} > ${fmt(critical[1], 4)}`;
 }
 
-/**
- * Left-tailed:  reject H0 when the statistic < critical (negative) value.
- * Right-tailed: reject H0 when the statistic > critical value.
- * Two-tailed:   reject H0 when |statistic| > positive critical value.
- */
 export function shouldReject(statistic: number, tail: Tail, critical: number[]): boolean {
   if (tail === "left") return statistic < critical[0];
   if (tail === "right") return statistic > critical[0];
   return Math.abs(statistic) > critical[1];
 }
 
-/* ------------------------------------------------------------------ */
-/* Default hypothesis statements                                        */
-/* ------------------------------------------------------------------ */
 
 function tailSymbol(tail: Tail): string {
   return tail === "left" ? "<" : tail === "right" ? ">" : "≠";
@@ -155,9 +133,6 @@ function defaultTwoSampleHypotheses(tail: Tail) {
   return { h0: "μ₁ = μ₂", h1: `μ₁ ${tailSymbol(tail)} μ₂` };
 }
 
-/* ------------------------------------------------------------------ */
-/* Shared decision builder                                              */
-/* ------------------------------------------------------------------ */
 
 function buildDecision(
   symbol: "z" | "t",
@@ -206,9 +181,6 @@ function buildDecision(
   };
 }
 
-/* ------------------------------------------------------------------ */
-/* Input validation helpers                                             */
-/* ------------------------------------------------------------------ */
 
 function readSampleSize(text: string, label: string, errors: string[], min = 1): number | null {
   if (isBlank(text)) {
@@ -252,11 +224,7 @@ function readPositive(text: string, label: string, errors: string[]): number | n
 
 const NOT_FINITE = ["The test statistic could not be calculated from these values."];
 
-/* ------------------------------------------------------------------ */
-/* One-sample Z-test                                                    */
-/* ------------------------------------------------------------------ */
 
-/** z = (x̄ − μ₀) / (σ / √n) */
 export function runOneSampleZTest(raw: OneSampleRaw): Validation<TestOutcome> {
   const errors: string[] = [];
   const n = readSampleSize(raw.n, "Sample size (n)", errors);
@@ -309,11 +277,7 @@ export function runOneSampleZTest(raw: OneSampleRaw): Validation<TestOutcome> {
   };
 }
 
-/* ------------------------------------------------------------------ */
-/* Two-sample Z-test                                                    */
-/* ------------------------------------------------------------------ */
 
-/** z = (x̄₁ − x̄₂) / √(σ₁²/n₁ + σ₂²/n₂), testing H₀: μ₁ = μ₂ */
 export function runTwoSampleZTest(raw: TwoSampleRaw): Validation<TestOutcome> {
   const errors: string[] = [];
   const n1 = readSampleSize(raw.n1, "Sample 1 size (n₁)", errors);
@@ -377,11 +341,7 @@ export function runTwoSampleZTest(raw: TwoSampleRaw): Validation<TestOutcome> {
   };
 }
 
-/* ------------------------------------------------------------------ */
-/* One-sample t-test                                                    */
-/* ------------------------------------------------------------------ */
 
-/** t = (x̄ − μ₀) / (s / √n), with df = n − 1 */
 export function runOneSampleTTest(raw: OneSampleTRaw): Validation<TestOutcome> {
   const errors: string[] = [];
   const n = readSampleSize(raw.n, "Sample size (n)", errors, 2);
@@ -428,14 +388,7 @@ export function runOneSampleTTest(raw: OneSampleTRaw): Validation<TestOutcome> {
   };
 }
 
-/* ------------------------------------------------------------------ */
-/* Two-sample t-test                                                    */
-/* ------------------------------------------------------------------ */
 
-/**
- * Pooled (equal variances):  t = (x̄₁ − x̄₂) / (sp·√(1/n₁ + 1/n₂)),  df = n₁ + n₂ − 2
- * Welch (unequal variances): t = (x̄₁ − x̄₂) / √(s₁²/n₁ + s₂²/n₂),  df by Welch–Satterthwaite
- */
 export function runTwoSampleTTest(raw: TwoSampleTRaw): Validation<TestOutcome> {
   const errors: string[] = [];
   const n1 = readSampleSize(raw.n1, "Sample 1 size (n₁)", errors, 2);
@@ -527,11 +480,7 @@ export function runTwoSampleTTest(raw: TwoSampleTRaw): Validation<TestOutcome> {
   };
 }
 
-/* ------------------------------------------------------------------ */
-/* Normal curve helper (used by the chart)                              */
-/* ------------------------------------------------------------------ */
 
-/** Standard normal probability density function. */
 export function normalPdf(z: number): number {
   return Math.exp(-(z * z) / 2) / Math.sqrt(2 * Math.PI);
 }

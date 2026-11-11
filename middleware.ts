@@ -5,7 +5,6 @@ export async function middleware(request: NextRequest) {
   const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
   if (token) return NextResponse.next();
 
-  // Private API routes answer with 401 instead of redirecting.
   if (request.nextUrl.pathname.startsWith("/api/")) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
@@ -17,6 +16,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Everything is protected EXCEPT: NextAuth's own routes, registration, the login/register pages, and static files.
   matcher: ["/((?!api/auth|api/register|login|register|_next/|favicon\\.ico).*)"],
 };

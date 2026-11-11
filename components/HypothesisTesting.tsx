@@ -27,14 +27,12 @@ import {
   Stat,
 } from "./ui";
 
-/* ---------- Empty input sets (one per test) ---------- */
 
 const EMPTY_Z_ONE = { n: "", sampleMean: "", mu0: "", sigma: "" };
 const EMPTY_Z_TWO = { n1: "", mean1: "", sigma1: "", n2: "", mean2: "", sigma2: "" };
 const EMPTY_T_ONE = { n: "", sampleMean: "", mu0: "", s: "" };
 const EMPTY_T_TWO = { n1: "", mean1: "", s1: "", n2: "", mean2: "", s2: "" };
 
-/* ---------- Examples taken from the lesson slides ---------- */
 
 interface Example {
   label: string;
@@ -71,7 +69,6 @@ const EXAMPLES: Example[] = [
     kind: "z-two",
     tail: "two",
     alpha: 0.05,
-    // The lesson gives variances 10.5 and 8.5, so σ = √variance.
     values: { n1: "50", mean1: "95", sigma1: "3.2404", n2: "50", mean2: "88", sigma2: "2.9155" },
   },
   {
@@ -93,7 +90,6 @@ const EXAMPLES: Example[] = [
     kind: "t-two",
     tail: "two",
     alpha: 0.05,
-    // The lesson gives variances 48 and 38, so s = √variance.
     values: { n1: "10", mean1: "86", s1: "6.928203", n2: "12", mean2: "88", s2: "6.164414" },
   },
   {
@@ -105,9 +101,7 @@ const EXAMPLES: Example[] = [
   },
 ];
 
-/* ---------- Small reusable pieces ---------- */
 
-/** A row of buttons where exactly one is selected (like tabs). */
 function Segmented<T extends string>({
   label,
   value,
@@ -151,7 +145,6 @@ function Segmented<T extends string>({
   );
 }
 
-/** A labelled number box (keeps the form code short). */
 function NumberField({
   id,
   label,
@@ -204,7 +197,6 @@ export default function HypothesisTesting() {
   const [equalVariances, setEqualVariances] = useState(true);
   const [selectedExample, setSelectedExample] = useState("");
 
-  // The selected test is made of two choices: Z or t, and one or two samples.
   const family: Family = kind.startsWith("z") ? "z" : "t";
   const sampleCount: SampleCount = kind.endsWith("one") ? "one" : "two";
 
@@ -280,12 +272,10 @@ export default function HypothesisTesting() {
       </header>
 
       <div className="space-y-6">
-        {/* ---------------- Inputs ---------------- */}
         <Card
           title="1. Set up the test"
           className="border-slate-200/90 shadow-[0_12px_28px_rgba(15,23,42,0.045)]"
         >
-          {/* Choose the test: Z or t, one or two samples */}
           <div className="grid gap-4 sm:grid-cols-2">
             <Segmented<Family>
               label="Type of test"
@@ -483,7 +473,6 @@ export default function HypothesisTesting() {
           </div>
         </Card>
 
-        {/* ---------------- States ---------------- */}
         {nothingEntered && (
           <EmptyState title="No values entered yet">
             Fill in the sample values above, or choose an example from the lesson, to see the test
@@ -501,7 +490,6 @@ export default function HypothesisTesting() {
           </Notice>
         )}
 
-        {/* ---------------- Results ---------------- */}
         {!nothingEntered && result && (
           <>
             <Card

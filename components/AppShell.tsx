@@ -31,7 +31,6 @@ export default function AppShell({ user }: { user: AccountUser }) {
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* Top bar (mobile only) */}
         <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-slate-200/80 bg-white/85 px-4 py-3 backdrop-blur-md lg:hidden">
           <button
             type="button"
@@ -47,7 +46,6 @@ export default function AppShell({ user }: { user: AccountUser }) {
         </header>
 
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 lg:px-10">
-          {/* The tools stay mounted so typed data is kept while switching sections. */}
           <div hidden={section !== "dashboard"}>
             <Dashboard onNavigate={navigate} />
           </div>

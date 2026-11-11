@@ -20,7 +20,6 @@ interface RegressionChartProps {
   intercept: number;
   minX: number;
   maxX: number;
-  /** Optional predicted point shown on the line */
   prediction: Point | null;
 }
 
@@ -35,7 +34,6 @@ export default function RegressionChart({
   const mounted = useMounted();
   if (!mounted) return <ChartLoading height={360} />;
 
-  // The fitted line is drawn from the smallest to the largest X value (ŷ = A + Bx).
   const linePoints: Point[] = [
     { x: minX, y: intercept + slope * minX },
     { x: maxX, y: intercept + slope * maxX },

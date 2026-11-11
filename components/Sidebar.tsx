@@ -37,7 +37,6 @@ interface SidebarProps {
   onNavigate: (id: SectionId) => void;
   open: boolean;
   onClose: () => void;
-  /** null means nobody is logged in */
   user: AccountUser | null;
 }
 
@@ -76,7 +75,6 @@ export default function Sidebar({ active, onNavigate, open, onClose, user }: Sid
 
   return (
     <>
-      {/* Dark overlay behind the drawer on small screens */}
       {open && (
         <div
           className="fixed inset-0 z-30 bg-slate-900/20 lg:hidden"
@@ -149,7 +147,6 @@ export default function Sidebar({ active, onNavigate, open, onClose, user }: Sid
           })}
         </nav>
 
-        {/* Account section */}
         <div className="border-t border-slate-200 p-3">
           {user ? (
             <div>

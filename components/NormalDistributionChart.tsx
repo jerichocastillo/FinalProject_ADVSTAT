@@ -18,13 +18,9 @@ import { ChartLoading } from "./ui";
 import { useMounted } from "./useMounted";
 
 interface DistributionChartProps {
-  /** The calculated test statistic (z or t) */
   statistic: number;
-  /** "z" draws the standard normal curve, "t" draws Student's t-distribution */
   symbol: "z" | "t";
-  /** Degrees of freedom (needed when symbol is "t") */
   df: number | null;
-  /** Critical value(s) from the same calculation that makes the decision */
   criticalValues: number[];
   tail: Tail;
   alpha: number;
@@ -62,7 +58,6 @@ export default function NormalDistributionChart({
 
     const density = (x: number) => (useT ? tPdf(x, df as number) : normalPdf(x));
 
-    // The regions begin exactly at the critical value(s).
     const leftCut = tail === "right" ? null : criticalValues[0];
     const rightCut = tail === "left" ? null : criticalValues[criticalValues.length - 1];
     const EPS = 1e-9;
@@ -78,7 +73,6 @@ export default function NormalDistributionChart({
         const d = density(x);
         const inLeftRejection = leftCut !== null && x <= leftCut + EPS;
         const inRightRejection = rightCut !== null && x >= rightCut - EPS;
-        // The critical value belongs to both regions so the two shaded areas touch with no gap.
         const inAcceptance =
           (leftCut === null || x >= leftCut - EPS) && (rightCut === null || x <= rightCut + EPS);
         return {
@@ -153,7 +147,6 @@ export default function NormalDistributionChart({
                 fontSize: 12,
               }}
             />
-            {/* Acceptance region (light indigo) */}
             <Area
               type="monotone"
               dataKey="acceptance"
@@ -166,7 +159,6 @@ export default function NormalDistributionChart({
               isAnimationActive={false}
               tooltipType="none"
             />
-            {/* Rejection region (red) */}
             <Area
               type="monotone"
               dataKey="rejection"
@@ -179,7 +171,6 @@ export default function NormalDistributionChart({
               isAnimationActive={false}
               tooltipType="none"
             />
-            {/* The curve itself, drawn on top of the shaded areas */}
             <Area
               type="monotone"
               dataKey="density"
@@ -220,7 +211,6 @@ export default function NormalDistributionChart({
         </ResponsiveContainer>
       </div>
 
-      {/* Simple legend that always matches what is drawn */}
       <ul className="mt-3 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs leading-5 text-slate-600">
         <li className="flex items-center gap-1.5">
           <span className="inline-block h-0.5 w-5 bg-indigo-600" /> {curveName}

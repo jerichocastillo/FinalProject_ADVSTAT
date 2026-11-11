@@ -3,7 +3,6 @@ export type FieldErrors = Partial<Record<FieldName, string>>;
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-/** Emails are stored in lowercase so "A@x.com" and "a@x.com" are the same account. */
 export function normalizeEmail(value: string): string {
   return value.trim().toLowerCase();
 }
@@ -17,7 +16,6 @@ export function validateEmail(email: string): string | null {
 export function validatePassword(password: string): string | null {
   if (password === "") return "Password is required.";
   if (password.length < 8) return "Password must be at least 8 characters.";
-  // bcrypt only uses the first 72 bytes of a password.
   if (new TextEncoder().encode(password).length > 72) {
     return "Password is too long (72 bytes maximum).";
   }
@@ -35,7 +33,6 @@ export type RegistrationResult =
   | { ok: true; data: { name: string; email: string; password: string } }
   | { ok: false; errors: FieldErrors };
 
-/** Validates the registration form. Used by the form (instant feedback) and by the server (the real check). */
 export function validateRegistration(input: Record<string, unknown>): RegistrationResult {
   const name = asText(input.name).trim().replace(/\s+/g, " ");
   const email = normalizeEmail(asText(input.email));
@@ -61,7 +58,6 @@ export function validateRegistration(input: Record<string, unknown>): Registrati
   return { ok: true, data: { name, email, password } };
 }
 
-/** Only allows redirects to pages inside this app (blocks "https://evil.com" and "//evil.com"). */
 export function safeCallbackUrl(value: string | undefined): string {
   if (value && value.startsWith("/") && !value.startsWith("//") && !value.startsWith("/\\")) {
     return value;

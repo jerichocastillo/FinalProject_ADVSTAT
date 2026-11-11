@@ -4,7 +4,6 @@ import { authOptions } from "@/lib/auth";
 import AppShell from "@/components/AppShell";
 
 export default async function Home() {
-  // Second layer of protection (the middleware is the first).
   const session = await getServerSession(authOptions);
   if (!session?.user) redirect("/login");
 

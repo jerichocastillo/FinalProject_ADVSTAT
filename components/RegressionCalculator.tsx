@@ -23,7 +23,6 @@ import {
   Stat,
 } from "./ui";
 
-/** Sample data from the lesson: hours studied (X) and exam score (Y). */
 const SAMPLE: { x: number; y: number }[] = [
   { x: 2, y: 65 },
   { x: 3, y: 75 },
@@ -46,7 +45,6 @@ export default function RegressionCalculator() {
   );
   const [predictX, setPredictX] = useState("");
 
-  /* ---------- table controls ---------- */
 
   function updateRow(id: number, field: "x" | "y", value: string) {
     setRows((current) => current.map((row) => (row.id === id ? { ...row, [field]: value } : row)));
@@ -70,12 +68,11 @@ export default function RegressionCalculator() {
     setPredictX("12");
   }
 
-  /* ---------- calculations (all done in lib/regression.ts) ---------- */
 
   const parsed = useMemo(() => parseRows(rows), [rows]);
 
   const outcome = useMemo(() => {
-    if (parsed.errors.length > 0) return null; // never calculate from invalid rows
+    if (parsed.errors.length > 0) return null;
     if (parsed.points.length === 0) return null;
     return computeRegression(parsed.points);
   }, [parsed]);
@@ -110,7 +107,6 @@ export default function RegressionCalculator() {
       </header>
 
       <div className="space-y-6">
-        {/* ---------------- Data entry ---------------- */}
         <Card
           title="1. Enter your data"
           subtitle="Type one X and one Y value per row. Empty rows are ignored. At least two complete pairs are needed."
@@ -188,7 +184,6 @@ export default function RegressionCalculator() {
           </p>
         </Card>
 
-        {/* ---------------- States: error / empty ---------------- */}
         {parsed.errors.length > 0 && (
           <Notice tone="error" title="Please fix these rows before results can be calculated">
             <ul className="list-disc space-y-0.5 pl-5">
@@ -212,7 +207,6 @@ export default function RegressionCalculator() {
           </Notice>
         )}
 
-        {/* ---------------- Results ---------------- */}
         {result && correlation && (
           <>
             <Card
